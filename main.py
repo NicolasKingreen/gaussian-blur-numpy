@@ -5,7 +5,8 @@ from PIL import Image
 
 def get_gaussian_kern(sigma=1.5, size=3):
     """
-    size gotta be odd (3, 5, 7, ...)
+    size gotta be odd (e. g. 3, 5, 7, ...)
+    p.s. could be rewritten with np.meshgrid()
     """
     indices = np.dstack(np.indices((size, size)))
     indices -= (size//2, size//2)  # offsetting coordinates
@@ -13,33 +14,39 @@ def get_gaussian_kern(sigma=1.5, size=3):
     x = indices[..., 1]
     y = indices[..., 0]
 
-    gaussian_matrix = np.exp(-(x**2 + y**2) / (2 * sigma**2)) / (np.pi * 2 * sigma**2)
+    normal = 1 / (2 * np.pi * sigma**2)
+    gaussian_matrix = np.exp(-(x**2 + y**2) / (2 * sigma**2)) / normal
     gaussian_matrix /= np.sum(gaussian_matrix)  # normalization helps to avoid oversaturation
 
     return gaussian_matrix
 
 
-def gaussian_blur(pixels, sigma=1.5, size=3):
-    pixels = np.asarray(pixels)
+def gaussian_blur(image: Image, sigma=1.5, size=3):
+    a = np.array(image)
     kern = get_gaussian_kern(sigma, size)
 
-    height, width = pixels.shape[:2]
-    for x in range(1, width-1):
-        for y in range(1, height-1):
-            center = y+1, x+1
+    a = np.pad(a, ((1, 1), (1, 1), (0, 0)), mode="edge")
 
-            area = pixels[y-1:y+2, x-1:x+2]
+    height, width = a.shape[:2]
+    for y in range(1, height - 1):
+        for x in range(1, width-1):
+            center = y+size//2, x+size//2
+
+            area = a[y-size//2:y+size//2+1, x-size//2:x+size//2+1]
 
             red = np.ceil(np.sum(area[..., 0] * kern)).astype("uint8")
             green = np.ceil(np.sum(area[..., 1] * kern)).astype("uint8")
             blue = np.ceil(np.sum(area[..., 2] * kern)).astype("uint8")
 
-            pixels[center] = np.dstack((red, green, blue))
-    return pixels
+            a[center] = np.dstack((red, green, blue))
+    return a[1:-1, 1:-1]
 
 
-image = Image.open("image.jpg")
-pixels = np.array(image)
-pixels = gaussian_blur(pixels)
+x, y = np.meshgrid(np.linspace(-1, 1, 3),
+                   np.linspace(-1, 1, 3))
+print(x, y)
+
+img = Image.open("image.jpg")
+pixels = gaussian_blur(img, sigma=10)
 plt.imshow(pixels)
 plt.show()
