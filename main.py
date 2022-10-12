@@ -42,10 +42,6 @@ def gaussian_blur(image: Image, sigma=1.5, size=3):
     return a[1:-1, 1:-1]
 
 
-x, y = np.meshgrid(np.linspace(-1, 1, 3),
-                   np.linspace(-1, 1, 3))
-print(x, y)
-
 img = Image.open("image.jpg")
 pixels = gaussian_blur(img, sigma=10)
 plt.imshow(pixels)
