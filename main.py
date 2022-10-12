@@ -25,24 +25,32 @@ def gaussian_blur(image: Image, sigma=1.5, size=3):
     a = np.array(image)
     kern = get_gaussian_kern(sigma, size)
 
-    a = np.pad(a, ((1, 1), (1, 1), (0, 0)), mode="edge")
+    a = np.pad(a, ((size//2, size//2), (size//2, size//2), (0, 0)), mode="edge")
 
     height, width = a.shape[:2]
-    for y in range(1, height - 1):
-        for x in range(1, width-1):
-            center = y+size//2, x+size//2
-
+    for y in range(size//2, height-size//2):
+        for x in range(size//2, width-size//2):
             area = a[y-size//2:y+size//2+1, x-size//2:x+size//2+1]
 
             red = np.ceil(np.sum(area[..., 0] * kern)).astype("uint8")
             green = np.ceil(np.sum(area[..., 1] * kern)).astype("uint8")
             blue = np.ceil(np.sum(area[..., 2] * kern)).astype("uint8")
 
-            a[center] = np.dstack((red, green, blue))
-    return a[1:-1, 1:-1]
+            a[y, x] = np.dstack((red, green, blue))
+    return a[size//2:-size//2, size//2:-size//2]
 
 
 img = Image.open("image.jpg")
-pixels = gaussian_blur(img, sigma=10)
-plt.imshow(pixels)
+blurred_img = gaussian_blur(img, sigma=20, size=11)
+
+fig, axs = plt.subplots(1, 2)
+
+axs[0].set_title("Original")
+axs[0].imshow(img)
+axs[0].axis("off")
+
+axs[1].set_title("Gaussian Blur")
+axs[1].imshow(blurred_img)
+axs[1].axis("off")
+
 plt.show()
