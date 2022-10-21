@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.widgets import Slider
 from PIL import Image
 
 
@@ -23,6 +24,8 @@ def get_gaussian_kern(sigma=1.5, size=3):
 
 def gaussian_blur(image: Image, sigma=1.5, size=3):
     a = np.array(image)
+    dest_img = np.copy(a)
+
     kern = get_gaussian_kern(sigma, size)
 
     a = np.pad(a, ((size//2, size//2), (size//2, size//2), (0, 0)), mode="edge")
@@ -36,14 +39,57 @@ def gaussian_blur(image: Image, sigma=1.5, size=3):
             green = np.ceil(np.sum(area[..., 1] * kern)).astype("uint8")
             blue = np.ceil(np.sum(area[..., 2] * kern)).astype("uint8")
 
-            a[y, x] = np.dstack((red, green, blue))
-    return a[size//2:-size//2, size//2:-size//2]
+            dest_img[y-size//2, x-size//2] = np.dstack((red, green, blue))
+    return dest_img
 
+
+init_sigma = 20
+init_size = 11
+
+sigma = init_sigma
+size = init_size
 
 img = Image.open("image.jpg")
-blurred_img = gaussian_blur(img, sigma=20, size=11)
+blurred_img = gaussian_blur(img, sigma=sigma, size=size)
 
 fig, axs = plt.subplots(1, 2)
+fig.subplots_adjust(left=0.1, bottom=0.3)
+
+# sigma slider
+axsigma = fig.add_axes([0.15, 0.1, 0.65, 0.03])
+sigma_slider = Slider(
+    ax=axsigma,
+    label='Sigma',
+    valmin=0.1,
+    valmax=30,
+    valinit=init_sigma
+)
+
+def update_sigma(val):
+    global sigma
+    sigma = val
+    blurred_img = gaussian_blur(img, sigma=sigma, size=size)
+    axs[1].imshow(blurred_img)
+sigma_slider.on_changed(update_sigma)
+
+# size slider
+axsize = fig.add_axes([0.15, 0.2, 0.65, 0.03])
+size_slider = Slider(
+    ax=axsize,
+    label='Size',
+    valmin=3,
+    valmax=17,
+    valstep=2,
+    valinit=init_size
+)
+
+def update_size(val):
+    global size
+    size = val
+    blurred_img = gaussian_blur(img, sigma=sigma, size=size)
+    axs[1].imshow(blurred_img)
+size_slider.on_changed(update_size)
+
 
 axs[0].set_title("Original")
 axs[0].imshow(img)
